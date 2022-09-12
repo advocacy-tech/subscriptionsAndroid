@@ -29,6 +29,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class RNSubscriptionsAndroidModule extends ReactContextBaseJavaModule
     implements PurchasesUpdatedListener, SkuDetailsResponseListener, BillingClientStateListener {
@@ -386,20 +387,32 @@ public class RNSubscriptionsAndroidModule extends ReactContextBaseJavaModule
       String transactionReceipt) {
     Log.e(TAG, "purchaseDigitalProduct: oldProduct: " + oldProduct + " productToBuy: " + productToBuy.getSku()
         + "prorationMode: " + prorationMode + "transactionReceipt:" + transactionReceipt);
-    BillingFlowParams.Builder flowParams = BillingFlowParams.newBuilder();
-    flowParams.setSkuDetails(productToBuy);
-    if (oldProduct != null) { // && !oldProduct.equals(productToBuy.getSku())
-      Log.e(TAG, "purchaseDigitalProduct: " + "applying proration");
-      flowParams.setOldSku(oldProduct, transactionReceipt);
-      flowParams.setReplaceSkusProrationMode(
-          (prorationMode == 0) ? BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION : prorationMode);
-    }
+//    BillingFlowParams.Builder flowParams = BillingFlowParams.newBuilder();
+//    flowParams.setSkuDetails(productToBuy);
+//    if (oldProduct != null) { // && !oldProduct.equals(productToBuy.getSku())
+//      Log.e(TAG, "purchaseDigitalProduct: " + "applying proration");
+//      flowParams.setOldSku(oldProduct, transactionReceipt);
+//      flowParams.setReplaceSkusProrationMode(
+//          (prorationMode == 0) ? BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION : prorationMode);
+//    }
+//
+//    BillingResult responseCode2 = billingClient.launchBillingFlow(getReactApplicationContext().getCurrentActivity(),
+//        flowParams.build());
+//    Log.e(TAG,
+//        "purchaseDigitalProduct:(0 = OK | 1 = USER CANCELED | 2-8 =ANY OTHER) " + responseCode2.getResponseCode());
+    BillingFlowParams.SubscriptionUpdateParams updateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+            .setOldSkuPurchaseToken(transactionReceipt)
+            .setReplaceSkusProrationMode(
+                    (prorationMode == 0) ? BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION : prorationMode
+            )
+            .build();
 
-    BillingResult responseCode2 = billingClient.launchBillingFlow(getReactApplicationContext().getCurrentActivity(),
-        flowParams.build());
-    Log.e(TAG,
-        "purchaseDigitalProduct:(0 = OK | 1 = USER CANCELED | 2-8 =ANY OTHER) " + responseCode2.getResponseCode());
+    BillingFlowParams billingFlowParams = BillingFlowParams.newBuilder()
+            .setSkuDetails(productToBuy)
+            .setSubscriptionUpdateParams(updateParams)
+            .build();
 
+    billingClient.launchBillingFlow(Objects.requireNonNull(getCurrentActivity()), billingFlowParams);
   }
 
   public String getBillingResponse(int responseCode) {
